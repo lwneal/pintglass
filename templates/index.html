@@ -12,14 +12,15 @@
   void main(void) {
     // Hard-coded specular highlight
     vec3 specularDirection = normalize(vec3(1, 2, 8));
-    vec3 diffuseDirection = normalize(vec3(4, 100, 8));
+    vec3 diffuseDirection = normalize(vec3(4, 4, -8));
     vec3 eye = normalize(vEye);
 
     float specular = pow(abs(dot(eye, specularDirection)), 250.0);
 
-    float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 40.0);
+    float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 100.0);
 
     float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 6.0);
+      + pow(abs(dot(vNormal, vec3(0, 1.0, 0))), 6.0);
 
     gl_FragColor.r = 0.05 + diffuse + specular + edginess;
     gl_FragColor.g = 0.05 + diffuse + specular + 2.0 * edginess;

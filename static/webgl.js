@@ -127,7 +127,7 @@ function initGhostBuffer() {
 // Clockwise gets culled
 function initCupBuffer() {
   var pi = 3.1415;
-  var res = 60;
+  var res = 100;
   var verts = [];
   var norms = [];
   var slope = 1.45;
@@ -205,13 +205,13 @@ function initCupBuffer() {
     var v_n = Math.sin(x_n);
 
     verts = verts.concat([u, 0, v]);
-    norms = norms.concat([0, -1, 0]);
+    norms = norms.concat([u, -1, v]);
 
     verts = verts.concat([0, 0, 0]);
     norms = norms.concat([0, -1, 0]);
 
     verts = verts.concat([u_n, 0, v_n]);
-    norms = norms.concat([0, -1, 0]);
+    norms = norms.concat([u_n, -1, v_n]);
   }
 
   // Outside-in triangle fan for the inner bottom
@@ -224,13 +224,13 @@ function initCupBuffer() {
     var v_n = innerRadius * Math.sin(x_n);
 
     verts = verts.concat([u, innerBottom, v]);
-    norms = norms.concat([0, 1, 0]);
+    norms = norms.concat([-u, 1, -v]);
 
     verts = verts.concat([0, innerBottom, 0]);
     norms = norms.concat([0, 1, 0]);
 
     verts = verts.concat([u_n, innerBottom, v_n]);
-    norms = norms.concat([0, 1, 0]);
+    norms = norms.concat([-u_n, 1, -v_n]);
   }
 
   // The lip between the inner and outer rim
