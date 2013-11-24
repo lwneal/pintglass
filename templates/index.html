@@ -2,40 +2,58 @@
 <head>
 <title>WebGL</title>
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="webgl-utils.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
 <script id="shader-fs" type="x-shader/x-fragment">
+  precision mediump float;
+  varying vec4 vColor;
   void main(void) {
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    gl_FragColor = vColor;
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
   attribute vec3 aVertexPosition;
+
   uniform mat4 uMVMatrix;
   uniform mat4 uPMatrix;
+
+  varying vec4 vColor;
+
   void main(void) {
     gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+    vColor = vec4(1.0, 0.5, 0.25, 1.0);
   }
 </script>
 <script>
 var triforce;
 var ghost;
 
+function selectBuffer(buf) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, buf.itemSize, gl.FLOAT, false, 0, 0);
+  setMatrixUniforms();
+}
+
 function drawScene() {
+  t = Date.now();
+  requestAnimFrame(drawScene);
+
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
   mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [-1.5, 0, -7]);
-  gl.bindBuffer(gl.ARRAY_BUFFER, triforce);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triforce.itemSize, gl.FLOAT, false, 0, 0);
-  setMatrixUniforms();
+  mat4.translate(mvMatrix, [-1, 0, -7]);
+  mat4.rotateY(mvMatrix, t / 1000);
+
+  selectBuffer(triforce);
   gl.drawArrays(gl.TRIANGLES, 0, triforce.numItems);
 
-  mat4.translate(mvMatrix, [2.0, 0.0, 0.0]);
-  gl.bindBuffer(gl.ARRAY_BUFFER, ghost);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, ghost.itemSize, gl.FLOAT, false, 0, 0);
-  setMatrixUniforms();
+
+  mat4.identity(mvMatrix);
+  mat4.translate(mvMatrix, [2.0, Math.sin(t / 1000), 0.0]);
+  mat4.translate(mvMatrix, [-1, 0, -7]);
+  selectBuffer(ghost);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, ghost.numItems);
 }
 
