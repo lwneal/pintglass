@@ -65,9 +65,34 @@ function initShaders() {
   shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
   gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
+  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+  gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
+
   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
   shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
+  shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+}
+
+function handleLoadedTexture(texture) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+function initTestTexture() {
+  var tex;
+  tex = gl.createTexture();
+  tex.image = new Image();
+  tex.image.onload = function () {
+      handleLoadedTexture(tex)
+  }
+
+  tex.image.src = "/test.png";
+  return tex
 }
 
 var mvMatrix = mat4.create();
@@ -80,8 +105,8 @@ function setMatrixUniforms() {
   mat4.toInverseMat3(mvMatrix, normalMatrix);
   mat3.transpose(normalMatrix);
   gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
-
 }
+
 
 function initTriforceBuffer() {
   var vbufTri;
@@ -130,10 +155,11 @@ function initCupBuffer() {
   var res = 100;
   var verts = [];
   var norms = [];
+  var tex = [];
   var slope = 1.45;
   var height = 4;
-  var innerRadius = 0.94
-  var innerBottom = 0.08
+  var innerRadius = 0.95
+  var innerBottom = 0.1
 
   // Bottom to top around the outside
   for (var i = 0; i < res; i++) {
@@ -145,24 +171,32 @@ function initCupBuffer() {
     var v_n = Math.sin(x_n);
     var normLen = Math.sqrt(slope);
     var norm = [u / normLen, -(slope - 1) / normLen, v / normLen];
+    var tx = 1 - (i / res);
+    var tx_n = 1 - ((i+1) / res);
 
     verts = verts.concat([u, 0, v]);
-    norms = norms.concat(norm);
+    norms = norms.concat(norm); 
+    tex = tex.concat([tx, 0]);
 
     verts = verts.concat([u_n, 0, v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([tx_n, 0]);
 
     verts = verts.concat([slope*u, height, slope*v]);
     norms = norms.concat(norm);
+    tex = tex.concat([tx_n, 1]);
 
     verts = verts.concat([slope*u, height, slope*v]);
     norms = norms.concat(norm);
+    tex = tex.concat([tx_n, 1]);
 
     verts = verts.concat([u_n, 0, v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([tx_n, 0]);
 
     verts = verts.concat([slope*u_n, height, slope*v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([tx_n, 1]);
   }
 
   // Bottom to top around the inside
@@ -178,21 +212,27 @@ function initCupBuffer() {
 
     verts = verts.concat([slope*u, height, slope*v]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([u, innerBottom, v]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([u_n, innerBottom, v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([slope*u_n, height, slope*v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([slope*u, height, slope*v]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([u_n, innerBottom, v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
   }
 
   // Outside-in triangle fan for the outer bottom
@@ -206,12 +246,15 @@ function initCupBuffer() {
 
     verts = verts.concat([u, 0, v]);
     norms = norms.concat([u, -1, v]);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([0, 0, 0]);
     norms = norms.concat([0, -1, 0]);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([u_n, 0, v_n]);
     norms = norms.concat([u_n, -1, v_n]);
+    tex = tex.concat([0, 0]);
   }
 
   // Outside-in triangle fan for the inner bottom
@@ -225,12 +268,15 @@ function initCupBuffer() {
 
     verts = verts.concat([u, innerBottom, v]);
     norms = norms.concat([-u, 1, -v]);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([0, innerBottom, 0]);
     norms = norms.concat([0, 1, 0]);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([u_n, innerBottom, v_n]);
     norms = norms.concat([-u_n, 1, -v_n]);
+    tex = tex.concat([0, 0]);
   }
 
   // The lip between the inner and outer rim
@@ -246,34 +292,46 @@ function initCupBuffer() {
 
     verts = verts.concat([slope * u, height, slope * v]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([innerRadius * slope * u_n, height, innerRadius * slope * v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([innerRadius * slope*u, height, innerRadius * slope*v]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([slope*u_n, height, slope*v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([innerRadius * slope * u_n, height, innerRadius * slope * v_n]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
 
     verts = verts.concat([slope*u, height, slope*v]);
     norms = norms.concat(norm);
+    tex = tex.concat([0, 0]);
   }
 
   var buf = gl.createBuffer();
-  var nbuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
 
+  var nbuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, nbuf);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(norms), gl.STATIC_DRAW);
+
+  var tbuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, tbuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tex), gl.STATIC_DRAW);
+
+  // 8 sets of triangles (2 from fans, 6 from cylinders), 3 verts per triangle
   return {
     vertices: buf,
     normals: nbuf,
-    itemSize: 3,
-    numItems: 8 * 3 * res
+    texMap: tbuf,
+    numItems: (8 * 3) * res
   };
 }

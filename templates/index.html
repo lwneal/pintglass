@@ -6,12 +6,16 @@
 <script type="text/javascript" src="webgl.js"></script>
 <script id="shader-fs" type="x-shader/x-fragment">
   precision mediump float;
+  uniform sampler2D uSampler;
+
   varying vec4 vColor;
   varying vec3 vNormal;
   varying vec3 vEye;
+  varying vec2 vTextureCoord;
+
   void main(void) {
     // Hard-coded specular highlight
-    vec3 specularDirection = normalize(vec3(1, 2, 8));
+    vec3 specularDirection = normalize(vec3(1, 2, 4));
     vec3 diffuseDirection = normalize(vec3(4, 4, -8));
     vec3 eye = normalize(vEye);
 
@@ -20,17 +24,19 @@
     float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 100.0);
 
     float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 6.0);
-      + pow(abs(dot(vNormal, vec3(0, 1.0, 0))), 6.0);
 
     gl_FragColor.r = 0.05 + diffuse + specular + edginess;
-    gl_FragColor.g = 0.05 + diffuse + specular + 2.0 * edginess;
-    gl_FragColor.b = 0.05 + diffuse + specular + 2.0 * edginess;
+    gl_FragColor.g = 0.05 + diffuse + specular + edginess;
+    gl_FragColor.b = 0.05 + diffuse + specular + edginess;
     gl_FragColor.a = 1.0;
+
+    gl_FragColor.rgb += texture2D(uSampler, vTextureCoord).rgb;
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
   attribute vec3 aVertexPosition;
   attribute vec3 aVertexNormal;
+  attribute vec2 aTextureCoord;
 
   uniform mat4 uMVMatrix;
   uniform mat4 uPMatrix;
@@ -39,32 +45,21 @@
   varying vec4 vColor;
   varying vec3 vNormal;
   varying vec3 vEye;
+  varying vec2 vTextureCoord;
 
   void main(void) {
-    vNormal = uNMatrix * aVertexNormal;
-
-    // Hard-code specular highlight from <1, 0, -2>
-    vec3 specularDirection = vec3(0.577, 0, 1.154);
-
     gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+    vNormal = uNMatrix * aVertexNormal;
     vEye = normalize(gl_Position.xyz);
-
-    float specular = pow(dot(vNormal, specularDirection), 10.0);
-
     vColor = vec4(0.5, 0.5, 0.5, 1);
-
+    vTextureCoord = aTextureCoord;
   }
 </script>
 <script>
 var triforce;
 var ghost;
 var pint;
-
-function selectBuffer(buf) {
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, buf.itemSize, gl.FLOAT, false, 0, 0);
-  setMatrixUniforms();
-}
+var tex;
 
 function drawScene() {
   t = Date.now();
@@ -75,35 +70,28 @@ function drawScene() {
 
   mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
-  /*
-  mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [-3, 0, -7]);
-  mat4.rotateY(mvMatrix, t / 1000);
-
-  selectBuffer(triforce);
-  gl.drawArrays(gl.TRIANGLES, 0, triforce.numItems);
-
-  mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [2.0, Math.sin(t / 1000), 0.0]);
-  mat4.translate(mvMatrix, [0, 0, -7]);
-  selectBuffer(ghost);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, ghost.numItems);
-  */
-
-  // The pintglass has normals
   mat4.identity(mvMatrix);
   mat4.translate(mvMatrix, [0, -2, -10]);
+
   var r = t / 1000;
-  mat4.rotateY(mvMatrix, r);
+  mat4.rotateY(mvMatrix, -r);
   mat4.rotateX(mvMatrix, 0.2 * Math.sin(r/7));
   mat4.rotateZ(mvMatrix, 0.5 * Math.sin(r/3));
-  setMatrixUniforms();
 
   gl.bindBuffer(gl.ARRAY_BUFFER, pint.vertices);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pint.itemSize, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, pint.normals);
-  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, pint.itemSize, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, pint.texMap);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+  setMatrixUniforms();
 
   gl.drawArrays(gl.TRIANGLES, 0, pint.numItems);
 }
@@ -115,6 +103,7 @@ function webGLStart() {
   triforce = initTriforceBuffer();
   ghost = initGhostBuffer(); 
   pint = initCupBuffer();
+  tex = initTestTexture();
 
   gl.clearColor(0, 0, 0, 1);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
