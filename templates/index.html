@@ -1,4 +1,4 @@
-<html>
+</html>
 <head>
 <title>WebGL</title>
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
@@ -14,13 +14,13 @@
   varying vec2 vTextureCoord;
 
   void main(void) {
-    // Hard-coded specular highlight
+    // Hard-coded glittery highlights
     vec3 specularDirection = normalize(vec3(1, 3, 8));
     vec3 diffuseDirection = normalize(vec3(3, 2, -8));
     vec3 eye = normalize(vEye);
 
-    float texSpecular = pow(abs(dot(eye, specularDirection)), 250.0);
-    float glassSpecular = pow(abs(dot(eye, specularDirection)), 800.0);
+    float texSpecular = pow(dot(specularDirection, eye), 250.0);
+    float glassSpecular = pow(dot(specularDirection, eye), 800.0);
 
     float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 14.0);
 
@@ -29,13 +29,14 @@
     vec3 vTex = texture2D(uSampler, vTextureCoord).rgb;
 
     vec3 bloom = vec3(.0, .0, .0);
+    /*
     for (float i = -.02; i <= .02; i += .01) {
       for (float j = -.02; j <= .02; j += .01) {
         bloom += texture2D(uSampler, vTextureCoord + vec2(i, j)).rgb;
       }
     }
     bloom *= 5.0 / 25.0;
-
+    */
 
     vec3 vSpecGlass = vec3(glassSpecular, glassSpecular, glassSpecular);
     vec3 vSpecTex = vec3(texSpecular, texSpecular, texSpecular);
@@ -49,8 +50,6 @@
     gl_FragColor.rgb += vTex * vSpecTex;
     gl_FragColor.rgb += bloom * vSpecTex;
     gl_FragColor.rgb += 0.1 * vTex;
-
-
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
@@ -80,7 +79,8 @@
 var triforce;
 var ghost;
 var pint;
-var tex;
+var wuTang;
+var generatedTex;
 
 function drawScene() {
   t = Date.now();
@@ -92,12 +92,12 @@ function drawScene() {
   mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
   mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [0, -2, -10]);
+  mat4.translate(mvMatrix, [0, -2.5, -8]);
 
   var r = t / 1000;
+  mat4.rotateX(mvMatrix, .2 * Math.sin(r/3));
   mat4.rotateY(mvMatrix, -.5 * r);
-  mat4.rotateX(mvMatrix, 0.01 * Math.sin(r/7));
-  mat4.rotateZ(mvMatrix, 0.02 * Math.sin(r/3));
+  mat4.rotateZ(mvMatrix, 0.02 * Math.sin(r/7));
 
   gl.bindBuffer(gl.ARRAY_BUFFER, pint.vertices);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
@@ -109,11 +109,7 @@ function drawScene() {
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.uniform1i(shaderProgram.samplerUniform, 0);
-
-  gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.bindTexture(gl.TEXTURE_2D, generatedTex);
   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
   setMatrixUniforms();
@@ -121,19 +117,71 @@ function drawScene() {
   gl.drawArrays(gl.TRIANGLES, 0, pint.numItems);
 }
 
+function getPowerOfTwo(value, pow) {
+	var pow = pow || 1;
+	while(pow<value) {
+		pow *= 2;
+	}
+	return pow;
+}
+
+function createTextureFromWords(textToWrite) {
+  var textureCanvas = document.getElementById("text-canvas");
+  var ctx = textureCanvas.getContext('2d');
+
+  var fontSize = 48;
+  var font = fontSize + "px monospace";// This determines the size of the text and the font family used
+  var fillStyle = "#666666";// This determines the text colour, it can take a hex value or rgba value (e.g. rgba(255,0,0,0.5))
+  var align = "center";// This determines the alignment of text, e.g. left, center, right
+  var baseline = "middle";// This determines the baseline of the text, e.g. top, middle, bottom
+
+  var text = textToWrite.split("\n");
+  var textHeight = fontSize;
+
+  console.log(text);
+
+  textureCanvas.width = 1024;
+  textureCanvas.height = 512;
+
+  ctx.fillStyle = fillStyle;
+  ctx.textAlign = align;
+  ctx.textBaseline = baseline;
+  ctx.font = font;
+
+  var offset = (textureCanvas.height/2 - textHeight*(text.length)) / 4;
+
+  console.log("Generated texture size: " + [textureCanvas.width, textureCanvas.height]);
+
+  for(var i = 0; i < text.length; i++) {
+    var textY = (i+1)*textHeight + offset;
+    ctx.fillText(text[i], textureCanvas.width / 2,  textY);
+  }
+
+  var tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  return tex;
+}
+
+function putWordsOnCup(words) {
+  generatedTex = createTextureFromWords(words);
+}
+
 function webGLStart() {
-  var canvas = document.getElementById("wine-canvas");
+  var canvas = document.getElementById("display-canvas");
   initGL(canvas);
   initShaders();
-  triforce = initTriforceBuffer();
-  ghost = initGhostBuffer(); 
   pint = initCupBuffer();
-  tex = initTestTexture();
+
+  putWordsOnCup("Test line number one\nTest line number two\nThe third test line\nSincerely Yours,\n\tDerp Herpington.................");
 
   gl.clearColor(0, 0, 0, 1);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
   gl.enable(gl.BLEND);
-  //gl.enable(gl.CULL_FACE);
   gl.disable(gl.DEPTH_TEST);
 
   drawScene();
@@ -141,8 +189,8 @@ function webGLStart() {
 </script>
 </head>
 <body onload="webGLStart();">
-  <canvas id="wine-canvas" width=800 height=600></canvas>
+  <canvas id="display-canvas" width=800 height=600></canvas>
+  <canvas id="text-canvas" width=512 height=512></canvas>
   <br>
-  WebGL canvas test
-<body>
+</body>
 </html>
