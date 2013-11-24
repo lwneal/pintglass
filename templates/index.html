@@ -15,22 +15,42 @@
 
   void main(void) {
     // Hard-coded specular highlight
-    vec3 specularDirection = normalize(vec3(1, 2, 4));
-    vec3 diffuseDirection = normalize(vec3(4, 4, -8));
+    vec3 specularDirection = normalize(vec3(1, 3, 8));
+    vec3 diffuseDirection = normalize(vec3(3, 2, -8));
     vec3 eye = normalize(vEye);
 
-    float specular = pow(abs(dot(eye, specularDirection)), 250.0);
+    float texSpecular = pow(abs(dot(eye, specularDirection)), 250.0);
+    float glassSpecular = pow(abs(dot(eye, specularDirection)), 800.0);
 
-    float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 100.0);
+    float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 14.0);
 
-    float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 6.0);
+    float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 10.0);
 
-    gl_FragColor.r = 0.05 + diffuse + specular + edginess;
-    gl_FragColor.g = 0.05 + diffuse + specular + edginess;
-    gl_FragColor.b = 0.05 + diffuse + specular + edginess;
-    gl_FragColor.a = 1.0;
+    vec3 vTex = texture2D(uSampler, vTextureCoord).rgb;
 
-    gl_FragColor.rgb += texture2D(uSampler, vTextureCoord).rgb;
+    vec3 bloom = vec3(.0, .0, .0);
+    for (float i = -.02; i <= .02; i += .01) {
+      for (float j = -.02; j <= .02; j += .01) {
+        bloom += texture2D(uSampler, vTextureCoord + vec2(i, j)).rgb;
+      }
+    }
+    bloom *= 5.0 / 25.0;
+
+
+    vec3 vSpecGlass = vec3(glassSpecular, glassSpecular, glassSpecular);
+    vec3 vSpecTex = vec3(texSpecular, texSpecular, texSpecular);
+    vec3 vDiff = vec3(diffuse, diffuse, diffuse);
+    vec3 vEdge = vec3(edginess, edginess, edginess);
+
+    gl_FragColor = vec4(0.01, 0.01, 0.01, 1.0);
+    gl_FragColor.rgb += vEdge;
+    gl_FragColor.rgb += vTex * vDiff;
+    gl_FragColor.rgb += 0.2 * vSpecGlass;
+    gl_FragColor.rgb += vTex * vSpecTex;
+    gl_FragColor.rgb += bloom * vSpecTex;
+    gl_FragColor.rgb += 0.1 * vTex;
+
+
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
@@ -46,6 +66,7 @@
   varying vec3 vNormal;
   varying vec3 vEye;
   varying vec2 vTextureCoord;
+  varying vec2 vBloomCoord;
 
   void main(void) {
     gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
@@ -74,9 +95,9 @@ function drawScene() {
   mat4.translate(mvMatrix, [0, -2, -10]);
 
   var r = t / 1000;
-  mat4.rotateY(mvMatrix, -r);
-  mat4.rotateX(mvMatrix, 0.2 * Math.sin(r/7));
-  mat4.rotateZ(mvMatrix, 0.5 * Math.sin(r/3));
+  mat4.rotateY(mvMatrix, -.5 * r);
+  mat4.rotateX(mvMatrix, 0.01 * Math.sin(r/7));
+  mat4.rotateZ(mvMatrix, 0.02 * Math.sin(r/3));
 
   gl.bindBuffer(gl.ARRAY_BUFFER, pint.vertices);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
@@ -88,6 +109,10 @@ function drawScene() {
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
   gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+  gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
