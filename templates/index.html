@@ -1,3 +1,169 @@
 <html>
-  Hello, world
+<head>
+<title>WebGL</title>
+<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script id="shader-fs" type="x-shader/x-fragment">
+  void main(void) {
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+  }
+</script>
+<script id="shader-vs" type="x-shader/x-vertex">
+  attribute vec3 aVertexPosition;
+  uniform mat4 uMVMatrix;
+  uniform mat4 uPMatrix;
+  void main(void) {
+    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+  }
+</script>
+<script>
+  var gl;
+
+  function initGL(canvas) {
+    try {
+      gl = canvas.getContext("experimental-webgl");
+      gl.viewportWidth = canvas.width;
+      gl.viewportHeight = canvas.height;
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  function getShader(gl, id) {
+    var shaderScript = document.getElementById(id);
+    if (!shaderScript) {
+      return null;
+    }
+
+    var str = "";
+    var k = shaderScript.firstChild;
+    while (k) {
+      if (k.nodeType == 3) {
+        str += k.textContent;
+      }
+      k = k.nextSibling;
+    }
+
+    var shader;
+    if (shaderScript.type == "x-shader/x-fragment") {
+      shader = gl.createShader(gl.FRAGMENT_SHADER);
+    } else if (shaderScript.type == "x-shader/x-vertex") {
+      shader = gl.createShader(gl.VERTEX_SHADER);
+    } else {
+      return null;
+    }
+
+    gl.shaderSource(shader, str);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.log(gl.getShaderInfoLog(shader));
+      return null;
+    }
+    return shader;
+  }
+
+  var shaderProgram;
+  function initShaders() {
+    var fragmentShader = getShader(gl, "shader-fs");
+    var vertexShader = getShader(gl, "shader-vs");
+
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+      console.log("Could not init shaders");
+    }
+    gl.useProgram(shaderProgram);
+
+    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+  }
+
+  var mvMatrix = mat4.create();
+  var pMatrix = mat4.create();
+
+  function setMatrixUniforms() {
+    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+  }
+
+  var vbufTri;
+  var vbufSquare;
+
+  function initBuffers() {
+    vbufTri = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbufTri);
+    var vertices = [
+      0, 2, 0,
+      -1, 0, 0,
+      1, 0, 0,
+      0, -2, 0,
+      -1, 0, 0,
+      -2, -2, 0,
+      2, -2, 0,
+      1, 0, 0,
+      0, -2, 0
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    vbufTri.itemSize = 3;
+    vbufTri.numItems = 9;
+
+    vbufSquare = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbufSquare);
+    vertices = [0,0,0];
+    var pi = 3.14
+    var res = 0.01
+    for (var x = 0; x < pi; x += res) {
+      var top = 2 * Math.sqrt(pi/4 - Math.pow(x - pi/2, 2));
+      var bot = -0.1*top - 0.3 * Math.sin(6.5*2*x );
+      vertices = vertices.concat([x, top, 0]);
+      vertices = vertices.concat([x, bot, 0]);
+    }
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    vbufSquare.itemSize = 3;
+    vbufSquare.numItems = 2 * pi / res;
+  }
+
+  function drawScene() {
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+    mat4.identity(mvMatrix);
+    mat4.translate(mvMatrix, [-1.5, 0, -7]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbufTri);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vbufTri.itemSize, gl.FLOAT, false, 0, 0);
+    setMatrixUniforms();
+    gl.drawArrays(gl.TRIANGLES, 0, vbufTri.numItems);
+
+    mat4.translate(mvMatrix, [2.0, 0.0, 0.0]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbufSquare);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vbufSquare.itemSize, gl.FLOAT, false, 0, 0);
+    setMatrixUniforms();
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vbufSquare.numItems);
+  }
+
+  function webGLStart() {
+    var canvas = document.getElementById("wine-canvas");
+    initGL(canvas);
+    initShaders();
+    initBuffers();
+
+    gl.clearColor(0, 0, 0, 1);
+    gl.enable(gl.DEPTH_TEST);
+
+    drawScene();
+  }
+</script>
+</head>
+<body onload="webGLStart();">
+  <canvas id="wine-canvas" width="640" height="480"></canvas>
+  <br>
+  WebGL canvas test
+<body>
 </html>
