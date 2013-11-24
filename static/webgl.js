@@ -123,37 +123,145 @@ function initGhostBuffer() {
   return vbufSquare;
 }
 
+// Counterclockwise is pointing towards the viewer.
+// Clockwise gets culled
 function initCupBuffer() {
   var pi = 3.1415;
-  var res = 10;
+  var res = 60;
   var verts = [];
   var norms = [];
   var slope = 1.45;
   var height = 4;
-  for (var i = 0; i < res + 1; i++) {
+  var innerRadius = 0.94
+  var innerBottom = 0.08
+
+  // Bottom to top around the outside
+  for (var i = 0; i < res; i++) {
     var x = 2 * (pi / res) * i;
+    var x_n = 2 * (pi / res) * (i + 1);
     var u = Math.cos(x);
     var v = Math.sin(x);
+    var u_n = Math.cos(x_n);
+    var v_n = Math.sin(x_n);
     var normLen = Math.sqrt(slope);
+    var norm = [u / normLen, -(slope - 1) / normLen, v / normLen];
 
     verts = verts.concat([u, 0, v]);
-    norms = norms.concat([u / normLen, -(slope - 1) / normLen, v / normLen]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([u_n, 0, v_n]);
+    norms = norms.concat(norm);
 
     verts = verts.concat([slope*u, height, slope*v]);
-    norms = norms.concat([u / normLen, -(slope - 1) / normLen, v / normLen]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([slope*u, height, slope*v]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([u_n, 0, v_n]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([slope*u_n, height, slope*v_n]);
+    norms = norms.concat(norm);
   }
-  /*
+
+  // Bottom to top around the inside
   for (var i = 0; i < res; i++) {
-    var x = (pi / res) * i;
-    var u = Math.cos(x*2);
-    var v = Math.sin(x*2);
+    var x = 2 * (pi / res) * i;
+    var x_n = 2 * (pi / res) * (i + 1);
+    var u = innerRadius * Math.cos(x);
+    var v = innerRadius * Math.sin(x);
+    var u_n = innerRadius * Math.cos(x_n);
+    var v_n = innerRadius * Math.sin(x_n);
+    var normLen = Math.sqrt(slope);
+    var norm = [-u / normLen, (slope - 1) / normLen, -v / normLen];
+
+    verts = verts.concat([slope*u, height, slope*v]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([u, innerBottom, v]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([u_n, innerBottom, v_n]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([slope*u_n, height, slope*v_n]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([slope*u, height, slope*v]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([u_n, innerBottom, v_n]);
+    norms = norms.concat(norm);
+  }
+
+  // Outside-in triangle fan for the outer bottom
+  for (var i = 0; i < res; i++) {
+    var x = 2 * (pi / res) * i;
+    var x_n = 2 * (pi / res) * (i + 1);
+    var u = Math.cos(x);
+    var v = Math.sin(x);
+    var u_n = Math.cos(x_n);
+    var v_n = Math.sin(x_n);
+
     verts = verts.concat([u, 0, v]);
     norms = norms.concat([0, -1, 0]);
 
     verts = verts.concat([0, 0, 0]);
     norms = norms.concat([0, -1, 0]);
+
+    verts = verts.concat([u_n, 0, v_n]);
+    norms = norms.concat([0, -1, 0]);
   }
-  */
+
+  // Outside-in triangle fan for the inner bottom
+  for (var i = 0; i < res; i++) {
+    var x = 2 * (pi / res) * i;
+    var x_n = 2 * (pi / res) * (i + 1);
+    var u = innerRadius * Math.cos(x);
+    var v = innerRadius * Math.sin(x);
+    var u_n = innerRadius * Math.cos(x_n);
+    var v_n = innerRadius * Math.sin(x_n);
+
+    verts = verts.concat([u, innerBottom, v]);
+    norms = norms.concat([0, 1, 0]);
+
+    verts = verts.concat([0, innerBottom, 0]);
+    norms = norms.concat([0, 1, 0]);
+
+    verts = verts.concat([u_n, innerBottom, v_n]);
+    norms = norms.concat([0, 1, 0]);
+  }
+
+  // The lip between the inner and outer rim
+  for (var i = 0; i < res; i++) {
+    var x = 2 * (pi / res) * i;
+    var x_n = 2 * (pi / res) * (i + 1);
+    var u = Math.cos(x);
+    var v = Math.sin(x);
+    var u_n = Math.cos(x_n);
+    var v_n = Math.sin(x_n);
+    var normLen = Math.sqrt(slope);
+    var norm = [0, 1, 0];
+
+    verts = verts.concat([slope * u, height, slope * v]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([innerRadius * slope * u_n, height, innerRadius * slope * v_n]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([innerRadius * slope*u, height, innerRadius * slope*v]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([slope*u_n, height, slope*v_n]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([innerRadius * slope * u_n, height, innerRadius * slope * v_n]);
+    norms = norms.concat(norm);
+
+    verts = verts.concat([slope*u, height, slope*v]);
+    norms = norms.concat(norm);
+  }
 
   var buf = gl.createBuffer();
   var nbuf = gl.createBuffer();
@@ -166,6 +274,6 @@ function initCupBuffer() {
     vertices: buf,
     normals: nbuf,
     itemSize: 3,
-    numItems: 2 * (res + 1)
+    numItems: 8 * 3 * res
   };
 }
