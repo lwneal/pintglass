@@ -11,12 +11,13 @@
   varying vec3 vEye;
   void main(void) {
     // Hard-coded specular highlight
-    vec3 specularDirection = normalize(vec3(2, 6, 8));
+    vec3 specularDirection = normalize(vec3(1, 2, 8));
+    vec3 diffuseDirection = normalize(vec3(4, 2, 8));
     vec3 eye = normalize(vEye);
 
-    float specular = pow(dot(normalize(eye), specularDirection), 200.0);
+    float specular = pow(dot(eye, specularDirection), 200.0);
 
-    float diffuse = pow(dot(normalize(vNormal), specularDirection), 40.0);
+    float diffuse = pow(dot(normalize(vNormal), diffuseDirection), 40.0);
 
     float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 6.0);
 
@@ -24,7 +25,6 @@
     gl_FragColor.g = 0.05 + diffuse + specular + 2.0 * edginess;
     gl_FragColor.b = 0.05 + diffuse + specular + 2.0 * edginess;
     gl_FragColor.a = 1.0;
-
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
@@ -91,11 +91,11 @@ function drawScene() {
 
   // The pintglass has normals
   mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [0, -2, -7]);
+  mat4.translate(mvMatrix, [0, -2, -10]);
   var r = t / 1000;
-  mat4.rotateX(mvMatrix, 0.1 * Math.sin(r));
   mat4.rotateY(mvMatrix, r);
-  mat4.rotateZ(mvMatrix, 0.1 * Math.sin(r));
+  mat4.rotateX(mvMatrix, 0.2 * Math.sin(r/7));
+  mat4.rotateZ(mvMatrix, 0.5 * Math.sin(r/3));
   setMatrixUniforms();
 
   gl.bindBuffer(gl.ARRAY_BUFFER, pint.vertices);
@@ -103,6 +103,7 @@ function drawScene() {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, pint.normals);
   gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, pint.itemSize, gl.FLOAT, false, 0, 0);
+
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, pint.numItems);
 }
 
@@ -115,14 +116,17 @@ function webGLStart() {
   pint = initCupBuffer();
 
   gl.clearColor(0, 0, 0, 1);
-  gl.enable(gl.DEPTH_TEST);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+  gl.enable(gl.BLEND);
+  //gl.enable(gl.CULL_FACE);
+  gl.disable(gl.DEPTH_TEST);
 
   drawScene();
 }
 </script>
 </head>
 <body onload="webGLStart();">
-  <canvas id="wine-canvas" width="640" height="480"></canvas>
+  <canvas id="wine-canvas" width=800 height=600></canvas>
   <br>
   WebGL canvas test
 <body>

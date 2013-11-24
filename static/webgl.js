@@ -124,24 +124,36 @@ function initGhostBuffer() {
 }
 
 function initCupBuffer() {
-  var pi = 3.1415
-  var res = 100
+  var pi = 3.1415;
+  var res = 10;
   var verts = [];
   var norms = [];
   var slope = 1.45;
   var height = 4;
-  var segments = 4;
-  for (var x = 0; x <= pi; x += pi/res) {
-    var u = Math.cos(x*2);
-    var v = Math.sin(x*2);
+  for (var i = 0; i < res + 1; i++) {
+    var x = 2 * (pi / res) * i;
+    var u = Math.cos(x);
+    var v = Math.sin(x);
     var normLen = Math.sqrt(slope);
 
     verts = verts.concat([u, 0, v]);
-    norms = norms.concat([u / normLen, (slope - 1) / normLen, v / normLen]);
-    
+    norms = norms.concat([u / normLen, -(slope - 1) / normLen, v / normLen]);
+
     verts = verts.concat([slope*u, height, slope*v]);
-    norms = norms.concat([u / normLen, (slope - 1) / normLen, v / normLen]);
+    norms = norms.concat([u / normLen, -(slope - 1) / normLen, v / normLen]);
   }
+  /*
+  for (var i = 0; i < res; i++) {
+    var x = (pi / res) * i;
+    var u = Math.cos(x*2);
+    var v = Math.sin(x*2);
+    verts = verts.concat([u, 0, v]);
+    norms = norms.concat([0, -1, 0]);
+
+    verts = verts.concat([0, 0, 0]);
+    norms = norms.concat([0, -1, 0]);
+  }
+  */
 
   var buf = gl.createBuffer();
   var nbuf = gl.createBuffer();
@@ -154,6 +166,6 @@ function initCupBuffer() {
     vertices: buf,
     normals: nbuf,
     itemSize: 3,
-    numItems: 2 * res + 2
+    numItems: 2 * (res + 1)
   };
 }
