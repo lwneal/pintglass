@@ -62,8 +62,12 @@ function initShaders() {
   shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
+  shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+  gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+
   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+  shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
 }
 
 var mvMatrix = mat4.create();
@@ -72,6 +76,11 @@ var pMatrix = mat4.create();
 function setMatrixUniforms() {
   gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
   gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+  var normalMatrix = mat3.create();
+  mat4.toInverseMat3(mvMatrix, normalMatrix);
+  mat3.transpose(normalMatrix);
+  gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+
 }
 
 function initTriforceBuffer() {
@@ -112,4 +121,39 @@ function initGhostBuffer() {
   vbufSquare.itemSize = 3;
   vbufSquare.numItems = 2 * res;
   return vbufSquare;
+}
+
+function initCupBuffer() {
+  var pi = 3.1415
+  var res = 100
+  var verts = [];
+  var norms = [];
+  var slope = 1.45;
+  var height = 4;
+  var segments = 4;
+  for (var x = 0; x <= pi; x += pi/res) {
+    var u = Math.cos(x*2);
+    var v = Math.sin(x*2);
+    var normLen = Math.sqrt(slope);
+
+    verts = verts.concat([u, 0, v]);
+    norms = norms.concat([u / normLen, (slope - 1) / normLen, v / normLen]);
+    
+    verts = verts.concat([slope*u, height, slope*v]);
+    norms = norms.concat([u / normLen, (slope - 1) / normLen, v / normLen]);
+  }
+
+  var buf = gl.createBuffer();
+  var nbuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, nbuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(norms), gl.STATIC_DRAW);
+  return {
+    vertices: buf,
+    normals: nbuf,
+    itemSize: 3,
+    numItems: 2 * res + 2
+  };
 }

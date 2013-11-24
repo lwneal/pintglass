@@ -7,26 +7,57 @@
 <script id="shader-fs" type="x-shader/x-fragment">
   precision mediump float;
   varying vec4 vColor;
+  varying vec3 vNormal;
+  varying vec3 vEye;
   void main(void) {
-    gl_FragColor = vColor;
+    // Hard-coded specular highlight
+    vec3 specularDirection = normalize(vec3(2, 6, 8));
+    vec3 eye = normalize(vEye);
+
+    float specular = pow(dot(normalize(eye), specularDirection), 200.0);
+
+    float diffuse = pow(dot(normalize(vNormal), specularDirection), 40.0);
+
+    float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 6.0);
+
+    gl_FragColor.r = 0.05 + diffuse + specular + edginess;
+    gl_FragColor.g = 0.05 + diffuse + specular + 2.0 * edginess;
+    gl_FragColor.b = 0.05 + diffuse + specular + 2.0 * edginess;
+    gl_FragColor.a = 1.0;
+
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
   attribute vec3 aVertexPosition;
+  attribute vec3 aVertexNormal;
 
   uniform mat4 uMVMatrix;
   uniform mat4 uPMatrix;
+  uniform mat3 uNMatrix;
 
   varying vec4 vColor;
+  varying vec3 vNormal;
+  varying vec3 vEye;
 
   void main(void) {
+    vNormal = uNMatrix * aVertexNormal;
+
+    // Hard-code specular highlight from <1, 0, -2>
+    vec3 specularDirection = vec3(0.577, 0, 1.154);
+
     gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-    vColor = vec4(1.0, 0.5, 0.25, 1.0);
+    vEye = normalize(gl_Position.xyz);
+
+    float specular = pow(dot(vNormal, specularDirection), 10.0);
+
+    vColor = vec4(0.5, 0.5, 0.5, 1);
+
   }
 </script>
 <script>
 var triforce;
 var ghost;
+var pint;
 
 function selectBuffer(buf) {
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -42,19 +73,37 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+
+  /*
   mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [-1, 0, -7]);
+  mat4.translate(mvMatrix, [-3, 0, -7]);
   mat4.rotateY(mvMatrix, t / 1000);
 
   selectBuffer(triforce);
   gl.drawArrays(gl.TRIANGLES, 0, triforce.numItems);
 
-
   mat4.identity(mvMatrix);
   mat4.translate(mvMatrix, [2.0, Math.sin(t / 1000), 0.0]);
-  mat4.translate(mvMatrix, [-1, 0, -7]);
+  mat4.translate(mvMatrix, [0, 0, -7]);
   selectBuffer(ghost);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, ghost.numItems);
+  */
+
+  // The pintglass has normals
+  mat4.identity(mvMatrix);
+  mat4.translate(mvMatrix, [0, -2, -7]);
+  var r = t / 1000;
+  mat4.rotateX(mvMatrix, 0.1 * Math.sin(r));
+  mat4.rotateY(mvMatrix, r);
+  mat4.rotateZ(mvMatrix, 0.1 * Math.sin(r));
+  setMatrixUniforms();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, pint.vertices);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pint.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, pint.normals);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, pint.itemSize, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, pint.numItems);
 }
 
 function webGLStart() {
@@ -62,7 +111,8 @@ function webGLStart() {
   initGL(canvas);
   initShaders();
   triforce = initTriforceBuffer();
-  ghost = initGhostBuffer();
+  ghost = initGhostBuffer(); 
+  pint = initCupBuffer();
 
   gl.clearColor(0, 0, 0, 1);
   gl.enable(gl.DEPTH_TEST);
