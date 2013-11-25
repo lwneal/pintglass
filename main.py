@@ -74,7 +74,20 @@ I wander’d off by myself,
 In the mystical moist night-air
 
            -W.W
-""", 32)
+""", 32),
+
+("Quicksand", u"""
+Let 𝕎 be the Wu-Tang Clan: 
+
+Define the set 𝕋
+such that ∀ t ∈ 𝕋,
+t is something to fuck with
+
+It follows thusly that
+𝕎 ∩ 𝕋 = ∅
+
+QED
+""", 40)
 ]
 
 @app.route('/')
