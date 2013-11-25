@@ -62,6 +62,19 @@ EMPLOYEE OF THE MONTH
 Edmure & Roslin
 June 12, 2014
 """, 72),
+
+("Monsieur La Doulaise", u"""
+When I was shown the charts and diagrams, 
+to add, divide, and measure them,
+When I sitting heard the astronomer where he lectured 
+with much applause in the lecture-room,
+How soon unaccountable I became tired and sick,
+Till rising and gliding out 
+I wander’d off by myself,
+In the mystical moist night-air
+
+           -W.W
+""", 32)
 ]
 
 @app.route('/')
