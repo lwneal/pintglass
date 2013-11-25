@@ -1,6 +1,31 @@
 </html>
 <head>
 <title>WebGL</title>
+<style type="text/css">                                                                                   
+
+#display-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+#text-canvas {
+  visibility: hidden;
+}
+
+textarea {
+  font-weight: bold;
+  font-size: 14;
+}
+
+h3 { 
+  color: #AFAFAF;
+}
+
+</style>
+<script src="jquery-2.0.3.min.js"></script>
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
 <script type="text/javascript" src="webgl-utils.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
@@ -22,7 +47,7 @@
     float texSpecular = pow(dot(specularDirection, eye), 250.0);
     float glassSpecular = pow(dot(specularDirection, eye), 800.0);
 
-    float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 14.0);
+    float diffuse = pow(abs(dot(normalize(vNormal), diffuseDirection)), 10.0);
 
     float edginess = pow(abs(dot(vNormal, vec3(1.0, 0, 0))), 10.0);
 
@@ -49,7 +74,7 @@
     gl_FragColor.rgb += 0.2 * vSpecGlass;
     gl_FragColor.rgb += vTex * vSpecTex;
     gl_FragColor.rgb += bloom * vSpecTex;
-    gl_FragColor.rgb += 0.1 * vTex;
+    gl_FragColor.rgb += 0.3 * vTex;
   }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
@@ -92,7 +117,7 @@ function drawScene() {
   mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
   mat4.identity(mvMatrix);
-  mat4.translate(mvMatrix, [0, -2.5, -8]);
+  mat4.translate(mvMatrix, [2, -2.2, -7]);
 
   var r = t / 1000;
   mat4.rotateX(mvMatrix, .2 * Math.sin(r/3));
@@ -153,7 +178,7 @@ function createTextureFromWords(textToWrite) {
   console.log("Generated texture size: " + [textureCanvas.width, textureCanvas.height]);
 
   for(var i = 0; i < text.length; i++) {
-    var textY = (i+1)*textHeight + offset;
+    var textY = (i+2)*textHeight + offset;
     ctx.fillText(text[i], textureCanvas.width / 2,  textY);
   }
 
@@ -168,6 +193,7 @@ function createTextureFromWords(textToWrite) {
 }
 
 function putWordsOnCup(words) {
+  var words = $('#text-input').val();
   generatedTex = createTextureFromWords(words);
 }
 
@@ -177,8 +203,6 @@ function webGLStart() {
   initShaders();
   pint = initCupBuffer();
 
-  putWordsOnCup("Test line number one\nTest line number two\nThe third test line\nSincerely Yours,\n\tDerp Herpington.................");
-
   gl.clearColor(0, 0, 0, 1);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
   gl.enable(gl.BLEND);
@@ -186,11 +210,30 @@ function webGLStart() {
 
   drawScene();
 }
+
+$(function() {
+  console.log("Loading geometry...");
+  webGLStart();
+  putWordsOnCup();
+  $('#text-input').keyup(putWordsOnCup);
+  $('#text-input').focus();
+  $('#text-input').select();
+});
+
 </script>
 </head>
-<body onload="webGLStart();">
-  <canvas id="display-canvas" width=800 height=600></canvas>
+<body>
+<h3 style="color: #AFAFAF;">Make your own pintglass!<h3>
+<textarea id="text-input" cols="40" rows="10">
+Happy Valentine's Day, Jane!
+❤ Hugs and kisses ❤
+
+Sincerely Yours,
+          John ☮
+</textarea>
+  <br>
   <canvas id="text-canvas" width=512 height=512></canvas>
+  <canvas id="display-canvas" width=800 height=600></canvas>
   <br>
 </body>
 </html>
