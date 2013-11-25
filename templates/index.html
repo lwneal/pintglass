@@ -2,7 +2,7 @@
 <head>
 <title>Pint Glass</title>
 <link href="/css/bootstrap.min.css" rel="stylesheet">
-<link href='http://fonts.googleapis.com/css?family=family=Dancing+Script:700' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family={{font}}' rel='stylesheet' type='text/css'>
 <style type="text/css">                                                                                   
 #display-canvas {
   position: fixed;
@@ -12,22 +12,22 @@
   width: 100%;
   height: 100%;
 }
-#text-canvas {
+
+.jumbotron {
   visibility: hidden;
 }
 
 textarea {
   font-weight: bold;
-  font-size: 32;
-  font-family: 'Dancing Script', cursive;
-  width: 100%;
+  font-size: 24;
+  font-family: '{{font}}';
 }
 
 h3 { 
   color: #AFAFAF;
 }
 
-button {
+.wide {
   width: 100%;
 }
 </style>
@@ -39,6 +39,7 @@ button {
 <script id="shader-fs" type="x-shader/x-fragment">
   precision mediump float;
   uniform sampler2D uSampler;
+  uniform sampler2D uBlurSampler;
 
   varying vec4 vColor;
   varying vec3 vNormal;
@@ -144,6 +145,10 @@ function drawScene() {
   gl.bindTexture(gl.TEXTURE_2D, generatedTex);
   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, generatedTex);
+  gl.uniform1i(shaderProgram.blurSamplerUniform, 0);
+
   setMatrixUniforms();
 
   gl.drawArrays(gl.TRIANGLES, 0, pint.numItems);
@@ -161,7 +166,7 @@ function createTextureFromWords(textToWrite) {
   var textureCanvas = document.getElementById("text-canvas");
   var ctx = textureCanvas.getContext('2d');
 
-  var fontSize = 48;
+  var fontSize = getFontSize();
   var font = getFont();
   var fillStyle = "#666666";// This determines the text colour, it can take a hex value or rgba value (e.g. rgba(255,0,0,0.5))
   var align = "center";// This determines the alignment of text, e.g. left, center, right
@@ -229,9 +234,13 @@ function resizeCanvas() {
   }
 }
 
+function getFontSize() {
+  return $('#font-size-select').val();
+}
+
 function getFont() {
   var textIn = $('#text-input');
-  return textIn.css('font-size') + " " + textIn.css('font-family');
+  return getFontSize() + "px " + textIn.css('font-family');
 }
 
 $(function() {
@@ -242,8 +251,13 @@ $(function() {
   $('#text-input').focus();
   $('#text-input').select();
 
+  $('#btn-buy').click(function() {
+    console.log('asdfasdf');
+    $('.jumbotron').show();
+  });
+
   window.addEventListener('resize', resizeCanvas);
-  window.setInterval(putWordsOnCup, 1000);
+  window.setInterval(putWordsOnCup, 2000);
 });
 
 </script>
@@ -251,16 +265,22 @@ $(function() {
 <body>
 <div class="container">
   <div class="col-lg-5">
-  <h3>Type your own custom message!<h3>
-  <textarea id="text-input" cols="30" rows="10">
-{{quote}}
-</textarea>
-  <br>
-  <br>
-  <button class="btn btn-lg btn-success">Buy Now for $20</button>
+    <h3>Type your own custom message!<h3>
+    <textarea id="text-input" class="wide" cols="30" rows="10">{{quote}}</textarea>
+    <br>
+    <br>
+    Font Size: <input type="number" id="font-size-select" min="10" max="256" value="{{size}}"></input>
+    <br>
+    <br>
+    <a class="wide btn btn-lg btn-info" href="/">Randomize</a>
+    <br>
+    <br>
+    <button id="btn-buy" class="wide btn btn-lg btn-success">Buy Now for $20</button>
   </div>
-<canvas id="text-canvas" width=512 height=512></canvas>
-<canvas id="display-canvas" width=800 height=600></canvas>
+  <canvas id="display-canvas" width=800 height=600></canvas>
+  <div class="jumbotron">
+    <canvas id="text-canvas" width=512 height=512></canvas>
+  </div>
 </div>
 </body>
 </html>

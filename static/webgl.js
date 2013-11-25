@@ -74,6 +74,7 @@ function initShaders() {
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
   shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
   shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+  shaderProgram.blurSamplerUniform = gl.getUniformLocation(shaderProgram, "uBlurSampler");
 }
 
 function handleLoadedTexture(texture) {
@@ -166,7 +167,8 @@ function initGhostBuffer() {
 // Clockwise gets culled
 function initCupBuffer() {
   var pi = 3.1415;
-  var res = 500;
+  var res = 100;
+  var outerRes = 1000;
   var verts = [];
   var norms = [];
   var tex = [];
@@ -176,17 +178,17 @@ function initCupBuffer() {
   var innerBottom = 0.1
 
   // Bottom to top around the outside
-  for (var i = 0; i < res; i++) {
-    var x = 2 * (pi / res) * i;
-    var x_n = 2 * (pi / res) * (i + 1);
+  for (var i = 0; i < outerRes; i++) {
+    var x = 2 * (pi / outerRes) * i;
+    var x_n = 2 * (pi / outerRes) * (i + 1);
     var u = Math.cos(x);
     var v = Math.sin(x);
     var u_n = Math.cos(x_n);
     var v_n = Math.sin(x_n);
     var normLen = Math.sqrt(slope);
     var norm = [u / normLen, -(slope - 1) / normLen, v / normLen];
-    var tx = 1 - (i / res);
-    var tx_n = 1 - ((i+1) / res);
+    var tx = 1 - (i / outerRes);
+    var tx_n = 1 - ((i+1) / outerRes);
 
     verts = verts.concat([u, 0, v]);
     norms = norms.concat(norm); 
@@ -346,6 +348,6 @@ function initCupBuffer() {
     vertices: buf,
     normals: nbuf,
     texMap: tbuf,
-    numItems: (8 * 3) * res
+    numItems: (2 * 3) * outerRes + (6 * 3) * res
   };
 }
