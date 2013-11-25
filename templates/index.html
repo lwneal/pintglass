@@ -1,8 +1,9 @@
 </html>
 <head>
-<title>WebGL</title>
+<title>Pint Glass</title>
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+<link href='http://fonts.googleapis.com/css?family=family=Dancing+Script:700' rel='stylesheet' type='text/css'>
 <style type="text/css">                                                                                   
-
 #display-canvas {
   position: fixed;
   top: 0;
@@ -17,18 +18,24 @@
 
 textarea {
   font-weight: bold;
-  font-size: 14;
+  font-size: 32;
+  font-family: 'Dancing Script', cursive;
+  width: 100%;
 }
 
 h3 { 
   color: #AFAFAF;
 }
 
+button {
+  width: 100%;
+}
 </style>
-<script src="jquery-2.0.3.min.js"></script>
-<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
-<script type="text/javascript" src="webgl-utils.js"></script>
-<script type="text/javascript" src="webgl.js"></script>
+<script src="/jquery-2.0.3.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="glMatrix-0.9.5.min.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="webgl.js"></script>
 <script id="shader-fs" type="x-shader/x-fragment">
   precision mediump float;
   uniform sampler2D uSampler;
@@ -40,7 +47,7 @@ h3 {
 
   void main(void) {
     // Hard-coded glittery highlights
-    vec3 specularDirection = normalize(vec3(1, 3, 8));
+    vec3 specularDirection = normalize(vec3(2, 2, 8));
     vec3 diffuseDirection = normalize(vec3(3, 2, -8));
     vec3 eye = normalize(vEye);
 
@@ -155,7 +162,7 @@ function createTextureFromWords(textToWrite) {
   var ctx = textureCanvas.getContext('2d');
 
   var fontSize = 48;
-  var font = fontSize + "px monospace";// This determines the size of the text and the font family used
+  var font = getFont();
   var fillStyle = "#666666";// This determines the text colour, it can take a hex value or rgba value (e.g. rgba(255,0,0,0.5))
   var align = "center";// This determines the alignment of text, e.g. left, center, right
   var baseline = "middle";// This determines the baseline of the text, e.g. top, middle, bottom
@@ -211,6 +218,22 @@ function webGLStart() {
   drawScene();
 }
 
+function resizeCanvas() {
+  var canvas = document.getElementById("display-canvas");
+  if (canvas.width != window.innerWidth || canvas.height != window.innerHeight) {
+    console.log('resizing canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewportWidth = canvas.width;
+    gl.viewportHeight = canvas.height;
+  }
+}
+
+function getFont() {
+  var textIn = $('#text-input');
+  return textIn.css('font-size') + " " + textIn.css('font-family');
+}
+
 $(function() {
   console.log("Loading geometry...");
   webGLStart();
@@ -218,22 +241,26 @@ $(function() {
   $('#text-input').keyup(putWordsOnCup);
   $('#text-input').focus();
   $('#text-input').select();
+
+  window.addEventListener('resize', resizeCanvas);
+  window.setInterval(putWordsOnCup, 1000);
 });
 
 </script>
 </head>
 <body>
-<h3 style="color: #AFAFAF;">Make your own pintglass!<h3>
-<textarea id="text-input" cols="40" rows="10">
-Happy Valentine's Day, Jane!
-❤ Hugs and kisses ❤
-
-Sincerely Yours,
-          John ☮
+<div class="container">
+  <div class="col-lg-5">
+  <h3>Type your own custom message!<h3>
+  <textarea id="text-input" cols="30" rows="10">
+{{quote}}
 </textarea>
   <br>
-  <canvas id="text-canvas" width=512 height=512></canvas>
-  <canvas id="display-canvas" width=800 height=600></canvas>
   <br>
+  <button class="btn btn-lg btn-success">Buy Now for $20</button>
+  </div>
+<canvas id="text-canvas" width=512 height=512></canvas>
+<canvas id="display-canvas" width=800 height=600></canvas>
+</div>
 </body>
 </html>
