@@ -1,6 +1,6 @@
 </html>
 <head>
-<title>Pint Glass</title>
+<title>Best Viewed In Chrome</title>
 <link href="/css/bootstrap.min.css" rel="stylesheet">
 <link href='http://fonts.googleapis.com/css?family={{font}}' rel='stylesheet' type='text/css'>
 <style type="text/css">                                                                                   
@@ -14,7 +14,13 @@
 }
 
 .jumbotron {
-  visibility: hidden;
+  position: fixed;
+  z-index: 10;
+  display: none;
+}
+
+#text-canvas {
+  border: 2px;
 }
 
 textarea {
@@ -279,7 +285,11 @@ $(function() {
   </div>
   <canvas id="display-canvas" width=800 height=600></canvas>
   <div class="jumbotron">
-    <canvas id="text-canvas" width=512 height=512></canvas>
+    <canvas id="text-canvas" width=1024 height=1024></canvas>
+    <br>
+    <center>
+      <a href="/buy" class="btn btn-large btn-danger">Upload Engraving & Go to Checkout</a>
+    </center>
   </div>
 </div>
 </body>

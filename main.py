@@ -69,5 +69,9 @@ def index():
   font, quote, size = random.choice(presets)
   return flask.render_template('index.html', quote=quote.strip(), font=font, size=size)
 
+@app.route('/buy')
+def buy():
+  return flask.render_template('buy.html')
+
 if __name__ == '__main__':
   app.run('0.0.0.0')
