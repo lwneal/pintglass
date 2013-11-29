@@ -51,12 +51,14 @@ BEST
 BOSS""", 72),
 
 ("Trade Winds", u"""
-BEERCRAFT BREWING COMPANY
+BEERCRAFT 
+BREWING 
+COMPANY
 
 JOHN JOHNSON
 
 EMPLOYEE OF THE MONTH
-""", 48),
+""", 32),
 
 ("Tangerine", u"""
 Edmure & Roslin
