@@ -99,7 +99,7 @@ def index():
 
 @app.route('/buy')
 def buy():
-  print("Holy Shit: Someone tried to buy one of these. Details: {0}".format(flask.request))
+  print("Potential Buyer: IP {0} User-Agent {1}".format(flask.request.remote_addr, flask.request.user_agent))
   return flask.render_template('buy.html')
 
 if __name__ == '__main__':
