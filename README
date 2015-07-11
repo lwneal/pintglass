@@ -1,5 +1,7 @@
 Google Fonts WebGL Mashup
 
+![Pintglass Screenshot](pintglass.png)
+
 See it live at http://freewillworkshop.org
 
 This is a simple Flask app that serves up a page that requests fonts from the Google Font API.
